@@ -1,0 +1,10 @@
+{
+  "name": "TerremotosVzla",
+  "short_name": "TerremotosVzla",
+  "description": "Monitor de terremotos en Venezuela con datos en tiempo real",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#ba2309",
+  "orientation": "portrait-primary"
+}
