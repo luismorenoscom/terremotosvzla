@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import SWRegister from './sw-register';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 
-const SITE_URL = 'https://terremotosvzla.com';
+const GA_ID = 'G-10LB72ZK6N';
+const SITE_URL = 'https://terremotosvlza.com';
 const SITE_NAME = 'TerremotosVzla';
 const TITLE = 'TerremotosVzla — Sismos y Terremotos en Venezuela en Tiempo Real';
 const DESCRIPTION =
@@ -132,7 +135,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen antialiased">
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}');
+          `}
+        </Script>
         <SWRegister />
+        <InstallPrompt />
         {children}
       </body>
     </html>

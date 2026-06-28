@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -17,6 +18,14 @@ export default function InstallPrompt() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Modo preview (solo desarrollo): ?install=ios o ?install=android
+    const preview = new URLSearchParams(window.location.search).get('install') as 'ios' | 'android' | null;
+    if (preview === 'ios' || preview === 'android') {
+      setPlatform(preview);
+      setVisible(true);
+      return;
+    }
 
     // Ya está instalada como app
     if (window.matchMedia('(display-mode: standalone)').matches) return;
@@ -65,8 +74,10 @@ export default function InstallPrompt() {
 
   if (!visible || !platform) return null;
 
-  return (
-    <div className="install-sheet" role="dialog" aria-label="Instalar aplicación">
+  return createPortal(
+    <>
+      <div className="install-overlay" onClick={dismiss} aria-hidden="true" />
+      <div className="install-sheet" role="dialog" aria-label="Instalar aplicación">
       <button type="button" className="install-close" onClick={dismiss} aria-label="Cerrar">
         ×
       </button>
@@ -105,6 +116,8 @@ export default function InstallPrompt() {
         </div>
       )}
     </div>
+    </>,
+    document.body,
   );
 }
 

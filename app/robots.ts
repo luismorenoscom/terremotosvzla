@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://terremotosvzla.com/sitemap.xml',
+    sitemap: 'https://terremotosvlza.com/sitemap.xml',
   };
 }
