@@ -63,6 +63,10 @@ button {
 
 .app-shell.map-mode {
   background: #9ad9f7;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .event-hero {
@@ -484,9 +488,22 @@ button {
 
 .map-screen {
   position: relative;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: #b8d9ec;
+}
+
+/* En mobile map-mode el contenido debe llenar el espacio disponible */
+.app-shell.map-mode .app-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell.map-mode .content-grid,
+.app-shell.map-mode .panel-map {
+  height: 100%;
 }
 
 .app-map {
