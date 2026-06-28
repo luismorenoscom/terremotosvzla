@@ -34,11 +34,12 @@ export function clearCache() {
 }
 
 export function getMagColor(mag: number): string {
-  if (mag < 2) return '#4ade80';
-  if (mag < 3) return '#facc15';
-  if (mag < 4) return '#fb923c';
-  if (mag < 5) return '#f87171';
-  return '#dc2626';
+  if (mag < 2) return '#4ade80';   // verde
+  if (mag < 3) return '#facc15';   // amarillo
+  if (mag < 4) return '#fb923c';   // naranja
+  if (mag < 5) return '#ef4444';   // rojo
+  if (mag < 6) return '#b91c1c';   // rojo oscuro
+  return '#7c3aed';                 // púrpura — M6+
 }
 
 export function getMagLabel(mag: number): string {

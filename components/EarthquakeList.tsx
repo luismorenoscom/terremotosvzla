@@ -121,7 +121,7 @@ export default function EarthquakeList({ earthquakes, realtimeIds, onSelect }: P
                   <div className="quake-ago">({timeAgo(eq.time)})</div>
                 </div>
 
-                <div className="quake-mag" style={{ color }}>
+                <div className="quake-mag" style={{ color: eq.magnitude >= 3 ? color : '#1a1a1a' }}>
                   {eq.magnitude.toFixed(1)}
                 </div>
               </button>

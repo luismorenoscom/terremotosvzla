@@ -41,15 +41,19 @@ export type WSStatus = 'connecting' | 'connected' | 'disconnected';
 
 export function useEMSCWebSocket(
   onNew: (eq: Earthquake) => void,
-  onStatus: (s: WSStatus) => void
+  onStatus: (s: WSStatus) => void,
+  onReconnect?: () => void,
 ) {
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
   const onNewRef = useRef(onNew);
   const onStatusRef = useRef(onStatus);
+  const onReconnectRef = useRef(onReconnect);
 
   useEffect(() => { onNewRef.current = onNew; }, [onNew]);
   useEffect(() => { onStatusRef.current = onStatus; }, [onStatus]);
+  useEffect(() => { onReconnectRef.current = onReconnect; }, [onReconnect]);
 
   useEffect(() => {
     let stopped = false;
@@ -61,7 +65,13 @@ export function useEMSCWebSocket(
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
 
-      ws.onopen = () => onStatusRef.current('connected');
+      ws.onopen = () => {
+        const wasReconnect = retryCountRef.current > 0;
+        retryCountRef.current = 0;
+        onStatusRef.current('connected');
+        // Fetch fresh data to recover events missed during the disconnection
+        if (wasReconnect) onReconnectRef.current?.();
+      };
 
       ws.onmessage = (event) => {
         try {
@@ -99,7 +109,10 @@ export function useEMSCWebSocket(
       ws.onclose = () => {
         if (stopped) return;
         onStatusRef.current('disconnected');
-        retryRef.current = setTimeout(connect, 5000);
+        // Exponential backoff: 2s, 4s, 8s, 16s, 30s max
+        const backoff = Math.min(30000, 2000 * Math.pow(2, retryCountRef.current));
+        retryCountRef.current += 1;
+        retryRef.current = setTimeout(connect, backoff);
       };
 
       ws.onerror = () => ws.close();

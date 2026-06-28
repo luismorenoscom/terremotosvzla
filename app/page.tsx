@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { Earthquake } from '@/lib/types';
 import { clearCache, fetchEarthquakes, getMagColor } from '@/lib/usgs';
@@ -34,6 +35,50 @@ function LiveStatus({ status }: { status: WSStatus }) {
   );
 }
 
+const LEGEND_ITEMS = [
+  { range: 'M < 2.0',      label: 'Micro',     color: getMagColor(1.5), desc: 'Imperceptible, solo detectado por instrumentos' },
+  { range: 'M 2.0 – 2.9',  label: 'Menor',     color: getMagColor(2.5), desc: 'Raramente sentido por las personas' },
+  { range: 'M 3.0 – 3.9',  label: 'Ligero',    color: getMagColor(3.5), desc: 'Sentido por algunas personas cercanas al epicentro' },
+  { range: 'M 4.0 – 4.9',  label: 'Moderado',  color: getMagColor(4.5), desc: 'Sentido por la mayoría, objetos se mueven' },
+  { range: 'M 5.0 – 5.9',  label: 'Fuerte',    color: getMagColor(5.5), desc: 'Daños menores en estructuras débiles' },
+  { range: 'M 6.0+',       label: 'Mayor',     color: getMagColor(6.5), desc: 'Daños importantes, potencialmente destructivo' },
+];
+
+function ColorLegendModal({ onClose }: { onClose: () => void }) {
+  return createPortal(
+    <>
+      <div className="legend-overlay" onClick={onClose} aria-hidden="true" />
+      <div className="legend-sheet" role="dialog" aria-modal="true" aria-label="Leyenda de colores">
+        <div className="legend-header">
+          <span className="legend-title">¿Qué significan los colores?</span>
+          <button type="button" className="legend-close" onClick={onClose} aria-label="Cerrar">✕</button>
+        </div>
+        <p className="legend-subtitle">
+          Cada círculo en el mapa representa un sismo. El color indica su magnitud y el tamaño refleja su intensidad.
+        </p>
+        <div className="legend-list">
+          {LEGEND_ITEMS.map(item => (
+            <div key={item.label} className="legend-item">
+              <span className="legend-dot" style={{ background: item.color }} />
+              <div className="legend-item-text">
+                <div className="legend-item-top">
+                  <span className="legend-item-label">{item.label}</span>
+                  <span className="legend-item-range">{item.range}</span>
+                </div>
+                <span className="legend-item-desc">{item.desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="legend-note">
+          A mayor magnitud, el círculo es más grande y oscuro.
+        </p>
+      </div>
+    </>,
+    document.body
+  );
+}
+
 function HamburgerIcon() {
   return (
     <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
@@ -51,6 +96,7 @@ function Header({
   loading,
   onRefresh,
   onBack,
+  onLegend,
 }: {
   tab: Tab;
   status: WSStatus;
@@ -58,6 +104,7 @@ function Header({
   loading: boolean;
   onRefresh: () => void;
   onBack: () => void;
+  onLegend: () => void;
 }) {
   if (tab === 'mapa') {
     return (
@@ -66,8 +113,8 @@ function Header({
           &lt;
         </button>
         <div className="brand-orbit">T</div>
-        <button type="button" onClick={onRefresh} className="round-button" aria-label="Actualizar">
-          R
+        <button type="button" onClick={onLegend} className="round-button" aria-label="Leyenda de colores">
+          ?
         </button>
       </header>
     );
@@ -182,6 +229,7 @@ export default function Home() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [wsStatus, setWsStatus] = useState<WSStatus>('connecting');
   const [minMag, setMinMag] = useState<number>(0);
+  const [showLegend, setShowLegend] = useState(false);
   const alertTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadEarthquakes = useCallback(async () => {
@@ -189,6 +237,16 @@ export default function Home() {
     setEarthquakes(data);
     setSelected(current => current ?? data[0] ?? null);
     setLastUpdate(new Date());
+  }, []);
+
+  // Called when WebSocket reconnects — bypasses localStorage cache to recover missed events
+  const silentRefresh = useCallback(async () => {
+    clearCache();
+    try {
+      const data = await fetchEarthquakes(QUERY_DAYS);
+      setEarthquakes(data);
+      setLastUpdate(new Date());
+    } catch { /* silent — no error banner for background catch-up */ }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -259,7 +317,7 @@ export default function Home() {
     }
   }, []);
 
-  useEMSCWebSocket(handleNewEarthquake, setWsStatus);
+  useEMSCWebSocket(handleNewEarthquake, setWsStatus, silentRefresh);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -307,6 +365,7 @@ export default function Home() {
           loading={loading}
           onRefresh={refresh}
           onBack={() => setTab('eventos')}
+          onLegend={() => setShowLegend(true)}
         />
 
         {tab === 'eventos' && allEarthquakes.length > 0 && (
@@ -369,6 +428,7 @@ export default function Home() {
 
         <BottomNav tab={tab} onTab={setTab} />
       </div>
+      {showLegend && <ColorLegendModal onClose={() => setShowLegend(false)} />}
     </div>
   );
 }

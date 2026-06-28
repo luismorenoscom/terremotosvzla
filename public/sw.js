@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'tv-shell-v1';
-const DATA_CACHE  = 'tv-data-v1';
+const SHELL_CACHE = 'tv-shell-v2';
+const DATA_CACHE  = 'tv-data-v2';
 
 const PRECACHE = ['/', '/logo.png', '/icon.png', '/manifest.json'];
 
@@ -40,7 +40,8 @@ self.addEventListener('fetch', event => {
       fetch(request)
         .then(res => {
           if (res.ok) {
-            caches.open(DATA_CACHE).then(c => c.put(request, res.clone()));
+            const cloned = res.clone();
+            caches.open(DATA_CACHE).then(c => c.put(request, cloned));
           }
           return res;
         })
@@ -62,7 +63,10 @@ self.addEventListener('fetch', event => {
       caches.match(request).then(cached => {
         if (cached) return cached;
         return fetch(request).then(res => {
-          if (res.ok) caches.open(SHELL_CACHE).then(c => c.put(request, res.clone()));
+          if (res.ok) {
+            const cloned = res.clone();
+            caches.open(SHELL_CACHE).then(c => c.put(request, cloned));
+          }
           return res;
         });
       })
@@ -74,7 +78,10 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(request)
       .then(res => {
-        if (res.ok) caches.open(SHELL_CACHE).then(c => c.put(request, res.clone()));
+        if (res.ok) {
+          const cloned = res.clone();
+          caches.open(SHELL_CACHE).then(c => c.put(request, cloned));
+        }
         return res;
       })
       .catch(() => caches.match(request))

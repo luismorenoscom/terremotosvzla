@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { useMap, CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Earthquake } from '@/lib/types';
@@ -117,25 +117,41 @@ export default function EarthquakeMap({ earthquakes, selected, onSelect }: Props
           />
           {earthquakes.map(eq => {
             const color = getMagColor(eq.magnitude);
+            const isSelected = selected?.id === eq.id;
+            const radius = Math.max(4, Math.min(18, eq.magnitude * 2.2));
             return (
-              <CircleMarker
-                key={eq.id}
-                center={[eq.lat, eq.lng]}
-                radius={Math.max(4, Math.min(18, eq.magnitude * 2.2))}
-                eventHandlers={{ click: () => onSelect?.(eq) }}
-                pathOptions={{
-                  color,
-                  fillColor: color,
-                  fillOpacity: selected?.id === eq.id ? 0.95 : 0.72,
-                  weight: selected?.id === eq.id ? 3 : 1,
-                }}
-              >
-                <Popup>
-                  <strong>M {eq.magnitude.toFixed(1)}</strong>
-                  <br />
-                  {eq.place}
-                </Popup>
-              </CircleMarker>
+              <Fragment key={eq.id}>
+                {isSelected && (
+                  <CircleMarker
+                    center={[eq.lat, eq.lng]}
+                    radius={radius + 8}
+                    interactive={false}
+                    pathOptions={{
+                      color,
+                      fill: false,
+                      weight: 3,
+                      className: 'quake-pulse-ring',
+                    }}
+                  />
+                )}
+                <CircleMarker
+                  center={[eq.lat, eq.lng]}
+                  radius={radius}
+                  eventHandlers={{ click: () => onSelect?.(eq) }}
+                  pathOptions={{
+                    color,
+                    fillColor: color,
+                    fillOpacity: isSelected ? 0.95 : 0.72,
+                    weight: isSelected ? 3 : 1,
+                  }}
+                >
+                  <Popup>
+                    <strong>M {eq.magnitude.toFixed(1)}</strong>
+                    <br />
+                    {eq.place}
+                  </Popup>
+                </CircleMarker>
+              </Fragment>
             );
           })}
         </MapContainer>

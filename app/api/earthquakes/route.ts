@@ -248,6 +248,24 @@ async function fetchWithTimeout(
   }
 }
 
+async function fetchUSGSHourFeed(): Promise<EQResult[]> {
+  try {
+    const res = await fetchWithTimeout(
+      'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson',
+      12000
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.features ?? [])
+      .filter((f: FDSNFeature) => inVenezuela(f.geometry.coordinates))
+      .map((f: FDSNFeature) =>
+        mapFeature(f, 'USGS', 'https://earthquake.usgs.gov/earthquakes/eventpage/')
+      );
+  } catch {
+    return [];
+  }
+}
+
 async function fetchUSGSWeekFeed(): Promise<EQResult[]> {
   try {
     const res = await fetchWithTimeout(
@@ -294,6 +312,23 @@ async function fetchEMSC(days: number): Promise<EQResult[]> {
     const json = await res.json();
     return (json.features ?? []).map((f: FDSNFeature) =>
       mapFeature(f, 'EMSC', 'https://www.seismicportal.eu/eventdetails.html#')
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchGEOFON(days: number): Promise<EQResult[]> {
+  try {
+    const params = buildFDSNParams(days, 'json');
+    const res = await fetchWithTimeout(
+      `https://geofon.gfz-potsdam.de/fdsnws/event/1/query?${params}`,
+      12000
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.features ?? []).map((f: FDSNFeature) =>
+      mapFeature(f, 'GEOFON', 'https://geofon.gfz-potsdam.de/eqinfo/event.php?id=')
     );
   } catch {
     return [];
@@ -465,21 +500,26 @@ async function buildCache(): Promise<void> {
   global._quakeFetching = (async () => {
     try {
       // FUNVISIS first so its magnitude wins deduplication
-      const [fr, fm, uw, uc, em] = await Promise.allSettled([
+      // usgs_hour runs in parallel — freshest USGS feed (updates every ~1 min)
+      const [fr, fm, uh, uw, uc, em, gf] = await Promise.allSettled([
         fetchFUNVISISRecent(),
         fetchFUNVISISMonthly(CACHE_DAYS),
+        fetchUSGSHourFeed(),
         fetchUSGSWeekFeed(),
         fetchUSGSCatalog(CACHE_DAYS),
         fetchEMSC(CACHE_DAYS),
+        fetchGEOFON(CACHE_DAYS),
       ]);
 
       // If a source fails, fall back to its last known-good data
       const all = [
         ...useOrUpdate('funvisis_recent',  fr.status === 'fulfilled' ? fr.value : []),
         ...useOrUpdate('funvisis_monthly', fm.status === 'fulfilled' ? fm.value : []),
+        ...useOrUpdate('usgs_hour',        uh.status === 'fulfilled' ? uh.value : []),
         ...useOrUpdate('usgs_week',        uw.status === 'fulfilled' ? uw.value : []),
         ...useOrUpdate('usgs_catalog',     uc.status === 'fulfilled' ? uc.value : []),
         ...useOrUpdate('emsc',             em.status === 'fulfilled' ? em.value : []),
+        ...useOrUpdate('geofon',           gf.status === 'fulfilled' ? gf.value : []),
       ];
 
       const merged = mergeEvents(all);
@@ -509,13 +549,15 @@ export async function GET(_req: NextRequest) {
   if (!global._quakeCache) {
     await buildCache();
   } else {
-    // Disk data loaded — refresh in background without blocking the request
-    void buildCache();
+    // Only refresh in background if cache is actually stale — timer already handles the 60s cycle
+    const cacheAge = Date.now() - global._quakeCache.ts;
+    if (cacheAge > REFRESH_MS) void buildCache();
   }
 
+  const data = global._quakeCache?.data ?? [];
   const age = Math.floor((Date.now() - (global._quakeCache?.ts ?? 0)) / 1000);
 
-  return NextResponse.json(global._quakeCache!.data, {
+  return NextResponse.json(data, {
     headers: {
       'Cache-Control': 'no-store, max-age=0',
       'X-Cache-Age': String(age),
