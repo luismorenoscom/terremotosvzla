@@ -205,26 +205,23 @@ button {
   flex-shrink: 0;
 }
 
-/* Ícono en el header (fondo oscuro rojo) */
-.brand-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+/* Logo horizontal en el header — blanco sobre fondo rojo oscuro */
+.header-logo {
+  height: 32px;
+  width: auto;
+  max-width: 260px;
   object-fit: contain;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.12);
-  padding: 2px;
+  filter: brightness(0) invert(1);
 }
 
-/* Logo horizontal en el footer (fondo claro sobre footer oscuro) */
+/* Logo horizontal en el footer — blanco sobre fondo oscuro */
 .footer-logo {
-  height: 28px;
+  height: 34px;
   width: auto;
-  max-width: 200px;
+  max-width: 270px;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.93);
-  padding: 4px 10px;
-  border-radius: 8px;
+  filter: brightness(0) invert(1);
 }
 
 .summary-strip {

@@ -88,8 +88,7 @@ function Header({
       {/* Topbar: marca izquierda, menú derecha */}
       <div className="app-topbar">
         <div className="topbar-brand">
-          <img src="/icon.png" className="brand-icon" alt="TerremotosVzla" />
-          <span className="topbar-name">TerremotosVzla</span>
+          <img src="/logo.png" className="header-logo" alt="TerremotosVzla" />
         </div>
         <div className="topbar-right">
           <LiveStatus status={status} />
