@@ -205,6 +205,28 @@ button {
   flex-shrink: 0;
 }
 
+/* Ícono en el header (fondo oscuro rojo) */
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px;
+}
+
+/* Logo horizontal en el footer (fondo claro sobre footer oscuro) */
+.footer-logo {
+  height: 28px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.93);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
 .summary-strip {
   position: sticky;
   top: 130px;
@@ -424,7 +446,7 @@ button {
 
 .map-topbar {
   position: absolute;
-  inset: 17px 20px auto;
+  inset: 16px 16px auto;
   z-index: 1050;
   display: flex;
   align-items: center;
@@ -438,23 +460,36 @@ button {
 
 .map-topbar .round-button {
   margin-left: 0;
-  width: 43px;
-  height: 43px;
-  color: #0f372c;
-  background: rgba(231, 255, 226, 0.86);
-  font-size: 35px;
-  font-weight: 300;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(13, 13, 18, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 12px;
+  cursor: pointer;
 }
 
 .map-topbar .brand-orbit {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  background: rgba(13, 13, 18, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .map-screen {
   position: relative;
   height: 100dvh;
-  min-height: 660px;
+  overflow: hidden;
+  background: #b8d9ec;
 }
 
 .app-map {
@@ -464,89 +499,116 @@ button {
   height: 100%;
 }
 
-.map-detail-card {
+/* ── Bottom sheet del mapa ── */
+.map-sheet {
   position: absolute;
-  top: 105px;
-  left: 18px;
-  right: 18px;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 1040;
-  padding: 13px 16px 10px;
-  border-radius: 17px;
-  background: rgba(237, 248, 255, 0.92);
-  box-shadow: 0 14px 36px rgba(35, 76, 96, 0.22);
-  backdrop-filter: blur(12px);
+  padding: 8px 18px 90px;
+  background: rgba(13, 13, 18, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px 20px 0 0;
 }
 
-.map-detail-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.map-detail-header h2 {
-  margin: 0;
-  color: var(--quake-red);
-  font-size: 15px;
-  line-height: 1.2;
-  font-weight: 900;
-}
-
-.map-detail-header p {
-  margin: 2px 0 0;
-  color: #59636e;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.flag {
-  font-size: 22px;
-}
-
-.map-detail-grid {
-  display: grid;
-  grid-template-columns: 90px 1fr 74px;
-  gap: 3px 8px;
-  align-items: center;
-  margin-top: 8px;
-  color: #66707a;
-  font-size: 12px;
-}
-
-.map-detail-grid strong {
-  color: #3f4851;
-  font-size: 13px;
-}
-
-.map-detail-grid strong:first-of-type {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.map-detail-grid small {
-  color: #7a8289;
-  text-align: right;
-}
-
-.source-badge {
-  justify-self: end;
-  min-width: 70px;
-  padding: 2px 9px;
-  text-align: center;
-  color: #fff;
-  background: #a4a6a9;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.card-grabber {
-  width: 31px;
+.map-sheet-grab {
+  width: 36px;
   height: 4px;
-  margin: 10px auto 0;
+  margin: 0 auto 14px;
   border-radius: 999px;
-  background: rgba(86, 99, 110, 0.34);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-.map-loading,
+.map-sheet-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.map-sheet-mag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid currentColor;
+  background: rgba(255, 255, 255, 0.04);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.map-sheet-mag-num {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.map-sheet-mag-type {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.75;
+  margin-top: 3px;
+}
+
+.map-sheet-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.map-sheet-place {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-sheet-region {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.38);
+  margin-top: 3px;
+}
+
+.map-sheet-source {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.3);
+  padding-top: 5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.map-sheet-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  flex-wrap: wrap;
+}
+
+.map-sheet-sep {
+  opacity: 0.3;
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #b8d9ec;
+}
+
 .app-empty {
   min-height: 420px;
   display: grid;
@@ -874,10 +936,15 @@ button {
     padding-bottom: 32px;
   }
 
-  /* El mapa ocupa toda la altura del panel */
+  /* El mapa ocupa toda la altura del panel en desktop */
   .panel-map .map-screen {
     height: 100%;
-    min-height: 0;
+  }
+
+  /* Bottom sheet con menos padding en desktop (sin nav) */
+  .map-sheet {
+    padding-bottom: 24px;
+    border-radius: 0;
   }
 
   /* Ocultar bottom nav en desktop */

@@ -1,6 +1,7 @@
 'use client';
 
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { useMap, CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Earthquake } from '@/lib/types';
 import { getMagColor, timeAgo } from '@/lib/usgs';
@@ -11,7 +12,7 @@ interface Props {
   onSelect?: (earthquake: Earthquake) => void;
 }
 
-const VENEZUELA_CENTER: [number, number] = [10.1, -67.2];
+const VENEZUELA_CENTER: [number, number] = [8.0, -66.5];
 
 function eventDate(timestamp: number): string {
   return new Date(timestamp).toLocaleString('es-VE', {
@@ -32,32 +33,44 @@ function regionName(place: string): string {
   return place.split(',').slice(1).join(',').trim() || 'Venezuela';
 }
 
-function DetailCard({ earthquake }: { earthquake: Earthquake }) {
+// Forces Leaflet to recalculate tile coverage after the container is in the DOM
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 120);
+    return () => clearTimeout(t);
+  }, [map]);
+  return null;
+}
+
+function BottomSheet({ earthquake }: { earthquake: Earthquake }) {
   const color = getMagColor(earthquake.magnitude);
 
   return (
-    <div className="map-detail-card">
-      <div className="map-detail-header">
-        <div>
-          <h2>{primaryName(earthquake.place)}</h2>
-          <p>{regionName(earthquake.place)}</p>
+    <div className="map-sheet">
+      <div className="map-sheet-grab" />
+      <div className="map-sheet-row">
+        <div className="map-sheet-mag" style={{ borderColor: color }}>
+          <span className="map-sheet-mag-num" style={{ color }}>
+            {earthquake.magnitude.toFixed(1)}
+          </span>
+          <span className="map-sheet-mag-type" style={{ color }}>
+            {earthquake.magType}
+          </span>
         </div>
-        <span className="flag">🇻🇪</span>
+        <div className="map-sheet-info">
+          <div className="map-sheet-place">{primaryName(earthquake.place)}</div>
+          <div className="map-sheet-region">{regionName(earthquake.place)}</div>
+        </div>
+        <span className="map-sheet-source">{earthquake.source}</span>
       </div>
-      <div className="map-detail-grid">
-        <span>magnitud:</span>
-        <strong style={{ color }}>{earthquake.magnitude.toFixed(1)} {earthquake.magType}</strong>
-        <span className="source-badge">{earthquake.source}</span>
-
-        <span>profundidad:</span>
-        <strong>{earthquake.depth.toFixed(1)} km</strong>
-        <small>({timeAgo(earthquake.time)})</small>
-
-        <span>fecha/hora:</span>
-        <strong>{eventDate(earthquake.time)}</strong>
-        <small>VET</small>
+      <div className="map-sheet-meta">
+        <span>{earthquake.depth.toFixed(1)} km prof.</span>
+        <span className="map-sheet-sep">·</span>
+        <span>{eventDate(earthquake.time)} VET</span>
+        <span className="map-sheet-sep">·</span>
+        <span>{timeAgo(earthquake.time)}</span>
       </div>
-      <div className="card-grabber" />
     </div>
   );
 }
@@ -65,45 +78,56 @@ function DetailCard({ earthquake }: { earthquake: Earthquake }) {
 export default function EarthquakeMap({ earthquakes, selected, onSelect }: Props) {
   const active = selected ?? earthquakes[0] ?? null;
 
+  // Guard against React Strict Mode double-invocation: only mount Leaflet
+  // when the component is truly in the DOM (not in the cleanup pass).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   return (
     <div className="map-screen">
-      {active && <DetailCard earthquake={active} />}
-      <MapContainer
-        center={active ? [active.lat, active.lng] : VENEZUELA_CENTER}
-        zoom={active ? 8 : 6}
-        className="app-map"
-        scrollWheelZoom
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {earthquakes.map(eq => {
-          const color = getMagColor(eq.magnitude);
-
-          return (
-            <CircleMarker
-              key={eq.id}
-              center={[eq.lat, eq.lng]}
-              radius={Math.max(4, Math.min(18, eq.magnitude * 2.2))}
-              eventHandlers={{ click: () => onSelect?.(eq) }}
-              pathOptions={{
-                color,
-                fillColor: color,
-                fillOpacity: selected?.id === eq.id ? 0.95 : 0.78,
-                weight: selected?.id === eq.id ? 3 : 1,
-              }}
-            >
-              <Popup>
-                <strong>M {eq.magnitude.toFixed(1)}</strong>
-                <br />
-                {eq.place}
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-      </MapContainer>
+      {!mounted && <div className="map-loading"><div className="app-spinner" /></div>}
+      {mounted && (
+        <MapContainer
+          center={active ? [active.lat, active.lng] : VENEZUELA_CENTER}
+          zoom={active ? 8 : 6}
+          className="app-map"
+          scrollWheelZoom
+          zoomControl={false}
+        >
+          <MapResizer />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {earthquakes.map(eq => {
+            const color = getMagColor(eq.magnitude);
+            return (
+              <CircleMarker
+                key={eq.id}
+                center={[eq.lat, eq.lng]}
+                radius={Math.max(4, Math.min(18, eq.magnitude * 2.2))}
+                eventHandlers={{ click: () => onSelect?.(eq) }}
+                pathOptions={{
+                  color,
+                  fillColor: color,
+                  fillOpacity: selected?.id === eq.id ? 0.95 : 0.72,
+                  weight: selected?.id === eq.id ? 3 : 1,
+                }}
+              >
+                <Popup>
+                  <strong>M {eq.magnitude.toFixed(1)}</strong>
+                  <br />
+                  {eq.place}
+                </Popup>
+              </CircleMarker>
+            );
+          })}
+        </MapContainer>
+      )}
+      {active && <BottomSheet earthquake={active} />}
     </div>
   );
 }

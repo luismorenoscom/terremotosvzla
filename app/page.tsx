@@ -88,7 +88,7 @@ function Header({
       {/* Topbar: marca izquierda, menú derecha */}
       <div className="app-topbar">
         <div className="topbar-brand">
-          <span className="brand-mark">T</span>
+          <img src="/icon.png" className="brand-icon" alt="TerremotosVzla" />
           <span className="topbar-name">TerremotosVzla</span>
         </div>
         <div className="topbar-right">
@@ -122,8 +122,7 @@ function AppFooter() {
   return (
     <footer className="app-footer">
       <div className="footer-brand">
-        <span className="brand-mark" style={{ width: 22, height: 22, fontSize: 11 }}>T</span>
-        <span className="footer-brand-name">TerremotosVzla</span>
+        <img src="/logo.png" className="footer-logo" alt="TerremotosVzla" />
       </div>
 
       <p className="footer-disclaimer">
