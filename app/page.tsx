@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Earthquake } from '@/lib/types';
 import { clearCache, fetchEarthquakes, getMagColor } from '@/lib/usgs';
 import EarthquakeList from '@/components/EarthquakeList';
+import PullToRefresh from '@/components/PullToRefresh';
 import { useEMSCWebSocket, WSStatus } from '@/hooks/useEMSCWebSocket';
 
 const QUERY_DAYS = 6;
@@ -30,6 +31,16 @@ function LiveStatus({ status }: { status: WSStatus }) {
       <span />
       {label}
     </span>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
+      <rect y="0" width="22" height="2.5" rx="1.25" fill="currentColor" />
+      <rect y="6.75" width="16" height="2.5" rx="1.25" fill="currentColor" />
+      <rect y="13.5" width="22" height="2.5" rx="1.25" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -62,38 +73,80 @@ function Header({
     );
   }
 
+  const updateText = lastUpdate
+    ? `Actualizado ${lastUpdate.toLocaleTimeString('es-VE', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/Caracas',
+      })} VET · auto cada 5 min`
+    : 'Consultando fuentes sísmicas...';
+
   return (
     <header className="event-hero">
-      <div className="status-row">
-        <span className="clock">
-          {new Date().toLocaleTimeString('es-VE', {
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZone: 'America/Caracas',
-          })}
-        </span>
-        <LiveStatus status={status} />
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={loading}
-          className="hero-refresh"
-          aria-label="Actualizar"
-        >
-          {loading ? '...' : 'R'}
-        </button>
-      </div>
       <div className="hero-world" />
-      <div className="hero-title">
-        <span className="brand-mark">T</span>
-        <h1>TerremotosVzla</h1>
+
+      {/* Topbar: marca izquierda, menú derecha */}
+      <div className="app-topbar">
+        <div className="topbar-brand">
+          <span className="brand-mark">T</span>
+          <span className="topbar-name">TerremotosVzla</span>
+        </div>
+        <div className="topbar-right">
+          <LiveStatus status={status} />
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            className="topbar-refresh"
+            aria-label="Actualizar"
+          >
+            {loading ? (
+              <span className="topbar-spinner" />
+            ) : (
+              <HamburgerIcon />
+            )}
+          </button>
+        </div>
       </div>
-      <p>
-        {lastUpdate
-          ? `Actualizado ${lastUpdate.toLocaleTimeString('es-VE')} - auto cada 5 min`
-          : 'Consultando fuentes...'}
-      </p>
+
+      {/* Hero body: título y subtítulo centrados */}
+      <div className="hero-body">
+        <h1 className="hero-heading">Registros de Terremotos</h1>
+        <p className="hero-sub">{updateText}</p>
+      </div>
     </header>
+  );
+}
+
+function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <div className="footer-brand">
+        <span className="brand-mark" style={{ width: 22, height: 22, fontSize: 11 }}>T</span>
+        <span className="footer-brand-name">TerremotosVzla</span>
+      </div>
+
+      <p className="footer-disclaimer">
+        Información con fines informativos. Para datos oficiales consulta{' '}
+        <a href="http://www.funvisis.gob.ve" target="_blank" rel="noopener noreferrer">
+          FUNVISIS
+        </a>
+        .
+      </p>
+
+      <div className="footer-sources">
+        <span className="footer-sources-label">Fuentes</span>
+        <div className="footer-sources-list">
+          <a href="http://www.funvisis.gob.ve" target="_blank" rel="noopener noreferrer">FUNVISIS</a>
+          <span>·</span>
+          <a href="https://earthquake.usgs.gov" target="_blank" rel="noopener noreferrer">USGS</a>
+          <span>·</span>
+          <a href="https://www.seismicportal.eu" target="_blank" rel="noopener noreferrer">EMSC</a>
+        </div>
+      </div>
+
+      <p className="footer-copy">© {new Date().getFullYear()} TerremotosVzla</p>
+    </footer>
   );
 }
 
@@ -130,6 +183,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [wsStatus, setWsStatus] = useState<WSStatus>('connecting');
+  const [minMag, setMinMag] = useState<number>(0);
   const alertTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadEarthquakes = useCallback(async () => {
@@ -231,6 +285,7 @@ export default function Home() {
   }, [earthquakes, realtimeEqs]);
 
   const maxMag = allEarthquakes.reduce((max, eq) => Math.max(max, eq.magnitude), 0);
+  const filtered = minMag > 0 ? allEarthquakes.filter(eq => eq.magnitude >= minMag) : allEarthquakes;
 
   return (
     <div className="phone-stage">
@@ -258,8 +313,25 @@ export default function Home() {
 
         {tab === 'eventos' && allEarthquakes.length > 0 && (
           <div className="summary-strip">
-            <strong>{allEarthquakes.length}</strong> eventos - Mayor{' '}
-            <b style={{ color: getMagColor(maxMag) }}>{maxMag.toFixed(1)}</b>
+            <div className="summary-info">
+              <strong>{filtered.length}</strong>
+              <span> eventos · Mayor </span>
+              <b style={{ color: getMagColor(maxMag) }}>{maxMag.toFixed(1)}</b>
+            </div>
+            <select
+              className="mag-filter"
+              value={minMag}
+              onChange={e => setMinMag(Number(e.target.value))}
+              aria-label="Filtrar por magnitud"
+            >
+              <option value={0}>Todos</option>
+              <option value={1}>M 1.0+</option>
+              <option value={2}>M 2.0+</option>
+              <option value={3}>M 3.0+</option>
+              <option value={4}>M 4.0+</option>
+              <option value={5}>M 5.0+</option>
+              <option value={6}>M 6.0+</option>
+            </select>
           </div>
         )}
 
@@ -273,16 +345,19 @@ export default function Home() {
           {loading && allEarthquakes.length === 0 ? (
             <EarthquakeList earthquakes={[]} />
           ) : tab === 'eventos' ? (
-            <EarthquakeList
-              earthquakes={allEarthquakes}
-              realtimeIds={new Set(realtimeEqs.map(e => e.id))}
-              onSelect={eq => {
-                setSelected(eq);
-                setTab('mapa');
-              }}
-            />
+            <PullToRefresh onRefresh={refresh}>
+              <EarthquakeList
+                earthquakes={filtered}
+                realtimeIds={new Set(realtimeEqs.map(e => e.id))}
+                onSelect={eq => {
+                  setSelected(eq);
+                  setTab('mapa');
+                }}
+              />
+              <AppFooter />
+            </PullToRefresh>
           ) : (
-            <EarthquakeMap earthquakes={allEarthquakes} selected={selected} onSelect={setSelected} />
+            <EarthquakeMap earthquakes={filtered} selected={selected} onSelect={setSelected} />
           )}
         </main>
 

@@ -1,7 +1,7 @@
 import { Earthquake } from './types';
 
-const CACHE_KEY = 'sismo_vzla_data_v4';
-const CACHE_TS_KEY = 'sismo_vzla_ts_v4';
+const CACHE_KEY = 'sismo_vzla_data_v8';
+const CACHE_TS_KEY = 'sismo_vzla_ts_v8';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 export async function fetchEarthquakes(days = 6): Promise<Earthquake[]> {

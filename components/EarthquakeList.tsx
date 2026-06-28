@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Earthquake } from '@/lib/types';
 import { getMagColor, timeAgo } from '@/lib/usgs';
+
+const PAGE_SIZE = 15;
 
 interface Props {
   earthquakes: Earthquake[];
@@ -46,19 +49,27 @@ function mainPlace(place: string): string {
   return place.split(',')[0].trim().toUpperCase();
 }
 
+function extractCity(place: string): string | null {
+  // "41 km al norte de Maracay, Venezuela"  →  "Maracay"
+  // "35 km NNE of El Limón, Venezuela"      →  "El Limón"
+  const raw = place.split(',')[0];
+  const m = raw.match(/\bde\s+(.+)$/i) ?? raw.match(/\bof\s+(.+)$/i);
+  return m ? m[1].trim() : null;
+}
+
 function subPlace(eq: Earthquake): string {
-  const parts = eq.place.split(',').slice(1).join(',').trim();
-  return parts || `${eq.source} · ${eq.depth.toFixed(1)} km`;
+  const city = extractCity(eq.place);
+  const depth = eq.depth > 0 ? `${eq.depth.toFixed(1)} km prof.` : null;
+  return [city, depth].filter(Boolean).join(' · ');
 }
 
 export default function EarthquakeList({ earthquakes, realtimeIds, onSelect }: Props) {
-  const groups = earthquakes.reduce<Map<string, Earthquake[]>>((acc, eq) => {
-    const key = dayKey(eq.time);
-    const list = acc.get(key) ?? [];
-    list.push(eq);
-    acc.set(key, list);
-    return acc;
-  }, new Map());
+  const [visible, setVisible] = useState(PAGE_SIZE);
+
+  // Resetea al inicio cuando llegan datos completamente nuevos
+  useEffect(() => {
+    setVisible(PAGE_SIZE);
+  }, [earthquakes[0]?.id]);
 
   if (earthquakes.length === 0) {
     return (
@@ -68,6 +79,17 @@ export default function EarthquakeList({ earthquakes, realtimeIds, onSelect }: P
       </div>
     );
   }
+
+  const shown = earthquakes.slice(0, visible);
+  const hasMore = visible < earthquakes.length;
+
+  const groups = shown.reduce<Map<string, Earthquake[]>>((acc, eq) => {
+    const key = dayKey(eq.time);
+    const list = acc.get(key) ?? [];
+    list.push(eq);
+    acc.set(key, list);
+    return acc;
+  }, new Map());
 
   return (
     <div className="quake-list">
@@ -107,6 +129,18 @@ export default function EarthquakeList({ earthquakes, realtimeIds, onSelect }: P
           })}
         </section>
       ))}
+
+      {hasMore && (
+        <div className="load-more-wrap">
+          <button
+            type="button"
+            className="load-more-btn"
+            onClick={() => setVisible(v => v + PAGE_SIZE)}
+          >
+            Ver más ({earthquakes.length - visible} restantes)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
