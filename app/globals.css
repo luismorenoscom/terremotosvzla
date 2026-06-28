@@ -715,6 +715,138 @@ button {
   to { transform: rotate(360deg); }
 }
 
+/* ── PWA Install Prompt ───────────────────────────────────── */
+.install-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: rgba(15, 15, 20, 0.97);
+  backdrop-filter: blur(24px);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 22px 20px 36px;
+  box-shadow: 0 -6px 40px rgba(0, 0, 0, 0.5);
+  animation: install-slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes install-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.install-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.install-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.install-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.install-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.install-text strong {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.install-text span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+}
+
+.install-btn {
+  width: 100%;
+  background: #ba2309;
+  color: #fff;
+  border: none;
+  border-radius: 13px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.install-ios {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.install-ios-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.install-ios-step strong {
+  color: #fff;
+}
+
+.install-ios-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.install-dismiss {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 13px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
 .app-footer {
   display: flex;
   flex-direction: column;

@@ -7,6 +7,7 @@ import { clearCache, fetchEarthquakes, getMagColor } from '@/lib/usgs';
 import EarthquakeList from '@/components/EarthquakeList';
 import PullToRefresh from '@/components/PullToRefresh';
 import { useEMSCWebSocket, WSStatus } from '@/hooks/useEMSCWebSocket';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const QUERY_DAYS = 6;
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -287,6 +288,7 @@ export default function Home() {
 
   return (
     <div className="phone-stage">
+      <InstallPrompt />
       <div className={`app-shell ${tab === 'mapa' ? 'map-mode' : ''}`}>
         {alert && (
           <button
