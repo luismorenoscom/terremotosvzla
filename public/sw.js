@@ -1,31 +1,82 @@
-const CACHE = 'sismo-vzla-v2';
+const SHELL_CACHE = 'tv-shell-v1';
+const DATA_CACHE  = 'tv-data-v1';
 
-self.addEventListener('install', () => {
+const PRECACHE = ['/', '/logo.png', '/icon.png', '/manifest.json'];
+
+// ── Instalación: pre-cachea el shell ────────────────────────
+self.addEventListener('install', event => {
   self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches
-      .keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
-      .then(() => clients.claim())
+  event.waitUntil(
+    caches.open(SHELL_CACHE)
+      .then(cache => cache.addAll(PRECACHE).catch(() => {}))
   );
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+// ── Activación: elimina caches viejos ───────────────────────
+self.addEventListener('activate', event => {
+  const CURRENT = [SHELL_CACHE, DATA_CACHE];
+  event.waitUntil(
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys.filter(k => !CURRENT.includes(k)).map(k => caches.delete(k))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
 
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
+// ── Fetch: estrategia por tipo de recurso ───────────────────
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Solo GET del mismo origen
+  if (request.method !== 'GET' || url.origin !== location.origin) return;
+
+  // API de sismos: red primero → cache de respaldo
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(request)
         .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(cache => cache.put('/', copy));
+          if (res.ok) {
+            caches.open(DATA_CACHE).then(c => c.put(request, res.clone()));
+          }
           return res;
         })
-        .catch(() => caches.match('/'))
+        .catch(() =>
+          caches.match(request).then(cached =>
+            cached ||
+            new Response('[]', {
+              headers: { 'Content-Type': 'application/json' },
+            })
+          )
+        )
     );
     return;
   }
+
+  // Assets de Next.js (con hash) — cache permanente
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.match(request).then(cached => {
+        if (cached) return cached;
+        return fetch(request).then(res => {
+          if (res.ok) caches.open(SHELL_CACHE).then(c => c.put(request, res.clone()));
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // Todo lo demás (HTML, imágenes): red primero → cache de respaldo
+  event.respondWith(
+    fetch(request)
+      .then(res => {
+        if (res.ok) caches.open(SHELL_CACHE).then(c => c.put(request, res.clone()));
+        return res;
+      })
+      .catch(() => caches.match(request))
+  );
 });
