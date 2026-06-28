@@ -344,20 +344,28 @@ export default function Home() {
         <main className="app-content">
           {loading && allEarthquakes.length === 0 ? (
             <EarthquakeList earthquakes={[]} />
-          ) : tab === 'eventos' ? (
-            <PullToRefresh onRefresh={refresh}>
-              <EarthquakeList
-                earthquakes={filtered}
-                realtimeIds={new Set(realtimeEqs.map(e => e.id))}
-                onSelect={eq => {
-                  setSelected(eq);
-                  setTab('mapa');
-                }}
-              />
-              <AppFooter />
-            </PullToRefresh>
           ) : (
-            <EarthquakeMap earthquakes={filtered} selected={selected} onSelect={setSelected} />
+            <div className="content-grid">
+              {/* Panel lista — visible en mobile solo si tab=eventos, siempre visible en desktop */}
+              <div className={`panel-list ${tab === 'eventos' ? 'panel-active' : ''}`}>
+                <PullToRefresh onRefresh={refresh}>
+                  <EarthquakeList
+                    earthquakes={filtered}
+                    realtimeIds={new Set(realtimeEqs.map(e => e.id))}
+                    onSelect={eq => {
+                      setSelected(eq);
+                      setTab('mapa');
+                    }}
+                  />
+                  <AppFooter />
+                </PullToRefresh>
+              </div>
+
+              {/* Panel mapa — visible en mobile solo si tab=mapa, siempre visible en desktop */}
+              <div className={`panel-map ${tab === 'mapa' ? 'panel-active' : ''}`}>
+                <EarthquakeMap earthquakes={filtered} selected={selected} onSelect={setSelected} />
+              </div>
+            </div>
           )}
         </main>
 

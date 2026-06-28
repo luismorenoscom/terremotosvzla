@@ -734,6 +734,21 @@ button {
   color: rgba(255, 255, 255, 0.25);
 }
 
+/* Paneles mobile: solo el activo se muestra */
+.content-grid {
+  height: 100%;
+}
+
+.panel-list,
+.panel-map {
+  display: none;
+}
+
+.panel-list.panel-active,
+.panel-map.panel-active {
+  display: block;
+}
+
 .load-more-wrap {
   display: flex;
   justify-content: center;
@@ -771,5 +786,118 @@ button {
 @media (min-width: 431px) {
   .app-shell {
     min-height: min(100dvh, 920px);
+  }
+}
+
+/* ── Layout Desktop ── */
+@media (min-width: 900px) {
+  .phone-stage {
+    display: block;
+    background: #0f0f10;
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100dvh;
+    box-shadow: none;
+    border-radius: 0;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  /* Header más compacto en desktop */
+  .event-hero {
+    position: sticky;
+    top: 0;
+  }
+
+  .app-topbar {
+    padding: 12px 32px 10px;
+  }
+
+  .topbar-name {
+    font-size: 18px;
+  }
+
+  .hero-body {
+    padding: 12px 32px 14px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hero-heading {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .hero-sub {
+    font-size: 12px;
+  }
+
+  /* Summary strip full width */
+  .summary-strip {
+    top: 0;
+    padding: 0 32px;
+    height: 42px;
+  }
+
+  /* Grid de dos columnas */
+  .app-content {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    height: calc(100dvh - 168px);
+  }
+
+  /* En desktop ambos paneles siempre visibles */
+  .panel-list,
+  .panel-map {
+    display: block !important;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .panel-list {
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+  }
+
+  /* El footer no necesita tanto padding en desktop */
+  .app-footer {
+    padding-bottom: 32px;
+  }
+
+  /* El mapa ocupa toda la altura del panel */
+  .panel-map .map-screen {
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* Ocultar bottom nav en desktop */
+  .bottom-nav {
+    display: none;
+  }
+
+  /* Pull to refresh desactivado visualmente en desktop */
+  .ptr-container {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Map topbar reposicionado en desktop */
+  .map-topbar {
+    inset: 14px 14px auto;
+  }
+
+  /* Quake list sin padding bottom extra en desktop */
+  .quake-list {
+    padding-bottom: 0;
   }
 }
