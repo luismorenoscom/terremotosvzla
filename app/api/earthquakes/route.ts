@@ -3,6 +3,20 @@ import * as http from 'node:http';
 
 export const runtime = 'nodejs';
 
+// ── Server-side cache ────────────────────────────────────────────────────────
+const CACHE_DAYS = 6;
+const REFRESH_MS = 60 * 1000; // rebuild every 60 s in background
+
+declare global {
+  // eslint-disable-next-line no-var
+  var _quakeCache: { data: EQResult[]; ts: number } | undefined;
+  // eslint-disable-next-line no-var
+  var _quakeFetching: Promise<void> | undefined;
+  // eslint-disable-next-line no-var
+  var _quakeTimer: ReturnType<typeof setInterval> | undefined;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const BOUNDS = {
   minlatitude: 0.6,
   maxlatitude: 12.5,
@@ -399,23 +413,50 @@ function mergeEvents(events: EQResult[]): EQResult[] {
   return unique;
 }
 
-export async function GET(req: NextRequest) {
-  const days = parseInt(req.nextUrl.searchParams.get('days') ?? '6');
+async function buildCache(): Promise<void> {
+  // If a fetch is already in progress, wait for it instead of starting another
+  if (global._quakeFetching) return global._quakeFetching;
 
-  const results = await Promise.allSettled([
-    fetchFUNVISISRecent(),
-    fetchFUNVISISMonthly(days),
-    fetchUSGSWeekFeed(),
-    fetchUSGSCatalog(days),
-    fetchEMSC(days),
-  ]);
+  global._quakeFetching = (async () => {
+    try {
+      // FUNVISIS first so its magnitude wins deduplication
+      const results = await Promise.allSettled([
+        fetchFUNVISISRecent(),
+        fetchFUNVISISMonthly(CACHE_DAYS),
+        fetchUSGSWeekFeed(),
+        fetchUSGSCatalog(CACHE_DAYS),
+        fetchEMSC(CACHE_DAYS),
+      ]);
+      const all = results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+      global._quakeCache = { data: mergeEvents(all), ts: Date.now() };
+    } finally {
+      global._quakeFetching = undefined;
+    }
+  })();
 
-  // FUNVISIS primero para que su magnitud prevalezca en la deduplicación
-  const all: EQResult[] = results.flatMap(r =>
-    r.status === 'fulfilled' ? r.value : []
-  );
+  return global._quakeFetching;
+}
 
-  return NextResponse.json(mergeEvents(all), {
-    headers: { 'Cache-Control': 'no-store, max-age=0' },
+function ensureTimer(): void {
+  if (global._quakeTimer) return;
+  global._quakeTimer = setInterval(() => { void buildCache(); }, REFRESH_MS);
+}
+
+export async function GET(_req: NextRequest) {
+  ensureTimer();
+
+  // Cold start: no cache yet — block only this first request (~20s)
+  // All subsequent requests return immediately from cache
+  if (!global._quakeCache) {
+    await buildCache();
+  }
+
+  const age = Math.floor((Date.now() - (global._quakeCache?.ts ?? 0)) / 1000);
+
+  return NextResponse.json(global._quakeCache!.data, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+      'X-Cache-Age': String(age),
+    },
   });
 }

@@ -2,7 +2,7 @@ import { Earthquake } from './types';
 
 const CACHE_KEY = 'sismo_vzla_data_v8';
 const CACHE_TS_KEY = 'sismo_vzla_ts_v8';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const CACHE_TTL = 90 * 1000; // 90 s — el servidor refresca cada 60 s en background
 
 export async function fetchEarthquakes(days = 6): Promise<Earthquake[]> {
   if (typeof window !== 'undefined') {
