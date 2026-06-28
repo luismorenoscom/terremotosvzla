@@ -33,12 +33,25 @@ function regionName(place: string): string {
   return place.split(',').slice(1).join(',').trim() || 'Venezuela';
 }
 
-// Forces Leaflet to recalculate tile coverage after the container is in the DOM
+// Forces Leaflet to recalculate tile coverage whenever the container resizes
 function MapResizer() {
   const map = useMap();
   useEffect(() => {
-    const t = setTimeout(() => map.invalidateSize(), 120);
-    return () => clearTimeout(t);
+    // Immediate + delayed calls to cover fast and slow renders
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 600);
+
+    // ResizeObserver: re-fires whenever the container dimensions change
+    const container = map.getContainer();
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(container);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      ro.disconnect();
+    };
   }, [map]);
   return null;
 }
