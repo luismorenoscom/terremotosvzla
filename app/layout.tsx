@@ -106,6 +106,14 @@ const jsonLd = {
       },
     },
     {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#org`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
+      sameAs: [SITE_URL],
+    },
+    {
       '@type': 'WebApplication',
       '@id': `${SITE_URL}/#app`,
       name: SITE_NAME,
@@ -115,12 +123,94 @@ const jsonLd = {
       operatingSystem: 'Any',
       inLanguage: 'es-VE',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+      author: { '@id': `${SITE_URL}/#org` },
       about: {
         '@type': 'Thing',
         name: 'Sismología',
         description: 'Monitoreo de actividad sísmica en Venezuela',
       },
+    },
+    {
+      '@type': 'Dataset',
+      '@id': `${SITE_URL}/#dataset`,
+      name: 'Registro de Sismos y Terremotos en Venezuela',
+      description:
+        'Base de datos en tiempo real de sismos registrados en Venezuela, integrada de FUNVISIS, USGS y EMSC. Actualización cada 60 segundos.',
+      url: SITE_URL,
+      inLanguage: 'es-VE',
+      temporalCoverage: '2020/..',
+      spatialCoverage: {
+        '@type': 'Place',
+        name: 'Venezuela',
+        geo: { '@type': 'GeoShape', box: '0.6 -73.4 12.5 -59.8' },
+      },
+      creator: [
+        { '@type': 'Organization', name: 'FUNVISIS', url: 'http://www.funvisis.gob.ve' },
+        { '@type': 'Organization', name: 'USGS', url: 'https://earthquake.usgs.gov' },
+        { '@type': 'Organization', name: 'EMSC', url: 'https://www.seismicportal.eu' },
+      ],
+      distribution: [
+        {
+          '@type': 'DataDownload',
+          encodingFormat: 'application/json',
+          contentUrl: `${SITE_URL}/api/earthquakes`,
+        },
+        {
+          '@type': 'DataDownload',
+          encodingFormat: 'application/rss+xml',
+          contentUrl: `${SITE_URL}/rss.xml`,
+        },
+      ],
+      measurementTechnique: 'Sismógrafo',
+      variableMeasured: 'Magnitud sísmica',
+      isAccessibleForFree: true,
+      publisher: { '@id': `${SITE_URL}/#org` },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${SITE_URL}/#faq`,
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: '¿Cuándo fue el último terremoto en Venezuela?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'TerremotosVzla actualiza su registro cada 60 segundos. El evento más reciente siempre aparece primero en terremotosvlza.com.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Qué zonas de Venezuela tienen más terremotos?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Las zonas más sísmicas son: la falla de Boconó en los Andes (Mérida, Barinas), la falla de San Sebastián en la costa central (Aragua, Miranda, Vargas) y la falla de El Pilar en el oriente (Sucre, Monagas).',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Qué significa la magnitud de un terremoto?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'La magnitud mide la energía liberada. M3.0 se siente levemente; M4.0–4.9 puede causar daños menores; M5.0–5.9 daños moderados; M6.0 o mayor puede ser destructivo. La escala es logarítmica: cada punto equivale a 32 veces más energía.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Qué es FUNVISIS?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'FUNVISIS es la Fundación Venezolana de Investigaciones Sismológicas, el organismo oficial del gobierno venezolano responsable del monitoreo sísmico nacional.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Cómo saber si hubo un sismo ahora en Venezuela?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Visita terremotosvlza.com desde cualquier dispositivo. La página muestra sismos de las últimas horas en tiempo real con magnitud, profundidad y ubicación. También disponible como app instalable (PWA).',
+          },
+        },
+      ],
     },
   ],
 };
@@ -132,6 +222,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`${SITE_NAME} — Sismos Venezuela`}
+          href={`${SITE_URL}/rss.xml`}
         />
       </head>
       <body className="min-h-screen antialiased">

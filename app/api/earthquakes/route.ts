@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +16,11 @@ declare global {
   var _quakeFetching: Promise<void> | undefined;
   // eslint-disable-next-line no-var
   var _quakeTimer: ReturnType<typeof setInterval> | undefined;
+  // last successful result per source — persists through outages
+  // eslint-disable-next-line no-var
+  var _sourceCache: Record<string, EQResult[]> | undefined;
+  // eslint-disable-next-line no-var
+  var _diskLoaded: boolean | undefined;
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -191,10 +198,10 @@ function parseFUNVISISHtml(html: string, cutoff: number): EQResult[] {
 
     const date = cells[0];
     const hour = cells[1];
-    const lat = Number(cells[2]);
-    const lng = Number(cells[3]);
-    const depth = Number(cells[4]) || 0;
-    const magnitude = Number(cells[5]);
+    const lat = Number(cells[2].replace(',', '.'));
+    const lng = Number(cells[3].replace(',', '.'));
+    const depth = Number((cells[4] ?? '0').replace(',', '.')) || 0;
+    const magnitude = Number(cells[5].replace(',', '.'));
     const place = cells[6];
 
     if (!Number.isFinite(magnitude) || magnitude <= 0) continue;
@@ -413,22 +420,71 @@ function mergeEvents(events: EQResult[]): EQResult[] {
   return unique;
 }
 
+const DISK_CACHE_PATH = path.join(process.cwd(), 'cache', 'quake-cache.json');
+
+function saveToDisk(data: EQResult[], sources: Record<string, EQResult[]>): void {
+  try {
+    fs.mkdirSync(path.dirname(DISK_CACHE_PATH), { recursive: true });
+    fs.writeFileSync(
+      DISK_CACHE_PATH,
+      JSON.stringify({ data, sources, ts: Date.now() }),
+      'utf8'
+    );
+  } catch { /* disk write failure is non-fatal */ }
+}
+
+function loadFromDisk(): void {
+  if (global._diskLoaded) return;
+  global._diskLoaded = true;
+  try {
+    const raw = fs.readFileSync(DISK_CACHE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as { data: EQResult[]; sources: Record<string, EQResult[]>; ts: number };
+    if (!global._quakeCache && Array.isArray(parsed.data) && parsed.data.length > 0) {
+      global._quakeCache = { data: parsed.data, ts: parsed.ts };
+    }
+    if (parsed.sources && typeof parsed.sources === 'object') {
+      if (!global._sourceCache) global._sourceCache = {};
+      for (const [k, v] of Object.entries(parsed.sources)) {
+        if (!global._sourceCache[k] && Array.isArray(v) && v.length > 0) {
+          global._sourceCache[k] = v as EQResult[];
+        }
+      }
+    }
+  } catch { /* no disk cache yet — first run */ }
+}
+
+function useOrUpdate(key: string, fresh: EQResult[]): EQResult[] {
+  if (!global._sourceCache) global._sourceCache = {};
+  if (fresh.length > 0) global._sourceCache[key] = fresh;
+  return global._sourceCache[key] ?? [];
+}
+
 async function buildCache(): Promise<void> {
-  // If a fetch is already in progress, wait for it instead of starting another
   if (global._quakeFetching) return global._quakeFetching;
 
   global._quakeFetching = (async () => {
     try {
       // FUNVISIS first so its magnitude wins deduplication
-      const results = await Promise.allSettled([
+      const [fr, fm, uw, uc, em] = await Promise.allSettled([
         fetchFUNVISISRecent(),
         fetchFUNVISISMonthly(CACHE_DAYS),
         fetchUSGSWeekFeed(),
         fetchUSGSCatalog(CACHE_DAYS),
         fetchEMSC(CACHE_DAYS),
       ]);
-      const all = results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
-      global._quakeCache = { data: mergeEvents(all), ts: Date.now() };
+
+      // If a source fails, fall back to its last known-good data
+      const all = [
+        ...useOrUpdate('funvisis_recent',  fr.status === 'fulfilled' ? fr.value : []),
+        ...useOrUpdate('funvisis_monthly', fm.status === 'fulfilled' ? fm.value : []),
+        ...useOrUpdate('usgs_week',        uw.status === 'fulfilled' ? uw.value : []),
+        ...useOrUpdate('usgs_catalog',     uc.status === 'fulfilled' ? uc.value : []),
+        ...useOrUpdate('emsc',             em.status === 'fulfilled' ? em.value : []),
+      ];
+
+      const merged = mergeEvents(all);
+      global._quakeCache = { data: merged, ts: Date.now() };
+      saveToDisk(merged, global._sourceCache ?? {});
     } finally {
       global._quakeFetching = undefined;
     }
@@ -445,10 +501,16 @@ function ensureTimer(): void {
 export async function GET(_req: NextRequest) {
   ensureTimer();
 
-  // Cold start: no cache yet — block only this first request (~20s)
-  // All subsequent requests return immediately from cache
+  // Cold start: try disk cache first (instant), then fetch fresh in background
+  if (!global._quakeCache) {
+    loadFromDisk();
+  }
+
   if (!global._quakeCache) {
     await buildCache();
+  } else {
+    // Disk data loaded — refresh in background without blocking the request
+    void buildCache();
   }
 
   const age = Math.floor((Date.now() - (global._quakeCache?.ts ?? 0)) / 1000);

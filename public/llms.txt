@@ -1,0 +1,53 @@
+# TerremotosVzla — Monitor de Sismos en Venezuela
+
+URL: https://terremotosvlza.com
+Idioma: Español (Venezuela)
+Actualización: Cada 60 segundos
+
+## ¿Qué es este sitio?
+
+TerremotosVzla es un monitor en tiempo real de terremotos y sismos registrados en Venezuela. Integra datos de tres fuentes sismológicas oficiales y los presenta en una interfaz web y móvil accesible para el público general.
+
+## Fuentes de datos
+
+- FUNVISIS (Fundación Venezolana de Investigaciones Sismológicas): organismo oficial del gobierno venezolano. Cubre sismos locales desde M1.0. Sitio: http://www.funvisis.gob.ve
+- USGS (United States Geological Survey): catálogo global de sismos. Cubre Venezuela desde M2.5 con alta confiabilidad. Sitio: https://earthquake.usgs.gov
+- EMSC (European-Mediterranean Seismological Centre): red sismológica europea con cobertura global. Sitio: https://www.seismicportal.eu
+
+Los datos de las tres fuentes se combinan y deduplicан automáticamente cada 60 segundos.
+
+## Cobertura geográfica
+
+Territorio venezolano:
+- Latitud: 0.6°N a 12.5°N
+- Longitud: 73.4°O a 59.8°O
+
+## Información por evento sísmico
+
+Cada registro incluye:
+- Magnitud y tipo (Mw, ML, mb, etc.)
+- Profundidad en kilómetros
+- Ubicación (ciudad o región más cercana)
+- Fecha y hora en hora Venezuela (VET, UTC-4)
+- Fuente del dato (FUNVISIS, USGS o EMSC)
+
+## Acceso a datos
+
+- Interfaz web: https://terremotosvlza.com
+- API JSON: https://terremotosvlza.com/api/earthquakes
+- Feed RSS: https://terremotosvlza.com/rss.xml
+- Página informativa: https://terremotosvlza.com/about
+
+## Sismicidad en Venezuela
+
+Venezuela es un país de alta actividad sísmica. Las zonas más activas son:
+- Sistema de fallas de Boconó (Andes venezolanos)
+- Falla de San Sebastián (región central costera)
+- Falla de El Pilar (oriente del país)
+- Zona costera de Caracas y Vargas
+
+Los terremotos históricos más relevantes incluyen el de Caracas (1812, ~7.7 Mw) y Cariaco (1997, M6.8).
+
+## Uso
+
+Sitio de acceso libre y gratuito con fines informativos. No reemplaza los avisos oficiales de FUNVISIS ni la Protección Civil venezolana.
