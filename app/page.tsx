@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { Earthquake } from '@/lib/types';
 import { clearCache, fetchEarthquakes, getMagColor } from '@/lib/usgs';
 import EarthquakeList from '@/components/EarthquakeList';
+import InstallBanner from '@/components/InstallBanner';
 import PullToRefresh from '@/components/PullToRefresh';
 import { useEMSCWebSocket, WSStatus } from '@/hooks/useEMSCWebSocket';
 
@@ -414,6 +415,7 @@ export default function Home() {
                       setTab('mapa');
                     }}
                   />
+                  <InstallBanner />
                   <AppFooter />
                 </PullToRefresh>
               </div>

@@ -83,7 +83,9 @@ export default function InstallPrompt() {
       </button>
 
       <div className="install-row">
-        <img src="/icon.png" className="install-icon" alt="TerremotosVzla" />
+        <div style={{ width: 54, height: 54, borderRadius: 14, overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+          <img src="/icon.png" alt="TerremotosVzla" style={{ width: 54, height: 54, display: 'block', objectFit: 'cover' }} />
+        </div>
         <div className="install-text">
           <strong>TerremotosVzla</strong>
           <span>Acceso rápido desde tu pantalla de inicio</span>
