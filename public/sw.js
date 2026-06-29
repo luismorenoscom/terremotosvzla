@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'tv-shell-v2';
-const DATA_CACHE  = 'tv-data-v2';
+const SHELL_CACHE = 'tv-shell-v3';
+const DATA_CACHE  = 'tv-data-v3';
 
 const PRECACHE = ['/', '/logo.png', '/icon.png', '/manifest.json'];
 
